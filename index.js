@@ -1,78 +1,55 @@
 const express = require('express');
 const request = require('request');
-
 const app = express();
-const port = 3000;
 
 let database = [];
+let skor = {};
 
 app.get('/game1/:idsoal', (req, res) => {
-  const idSoal = req.params.idsoal;
-  request.get('https://rest-api.akuari.my.id/games/tebakkata', (error, response, body) => {
-    const gameData = JSON.parse(body);
-    const game = gameData.hasil;
-    database.push({ idSoal, game });
-    res.send(`Game 1 dimulai dengan soal: ${game.soal}`);
-  });
+    request('https://rest-api.akuari.my.id/games/tebakkata', (error, response, body) => {
+        if (!error && response.statusCode == 200) {
+            let data = JSON.parse(body);
+            database.push(data.hasil);
+            res.json(data.hasil);
+        }
+    });
 });
 
 app.get('/game2/:idsoal', (req, res) => {
-  const idSoal = req.params.idsoal;
-  request.get('https://rest-api.akuari.my.id/games/susunkata', (error, response, body) => {
-    const gameData = JSON.parse(body);
-    const game = gameData.hasil;
-    database.push({ idSoal, game });
-    res.send(`Game 2 dimulai dengan soal: ${game.soal}`);
-  });
+    request('https://rest-api.akuari.my.id/games/susunkata', (error, response, body) => {
+        if (!error && response.statusCode == 200) {
+            let data = JSON.parse(body);
+            database.push(data.hasil);
+            res.json(data.hasil);
+        }
+    });
 });
 
 app.get('/jawab/:user', (req, res) => {
-  const user = req.params.user;
-  const jawaban = req.query.jawaban;
-  const idSoal = req.query.idsoal;
-  const gameIndex = database.findIndex((game) => game.idSoal === idSoal);
-  const game = database[gameIndex].game;
-  let response = '';
+    let user = req.params.user;
+    let jawaban = req.query.jawaban;
+    let idsoal = req.query.idsoal;
 
-  if (game.jawaban === jawaban) {
-    response = `Jawaban ${user} benar! Anda mendapatkan 3 poin.`;
-  } else {
-    response = `Jawaban ${user} salah! Anda kehilangan 1 poin.`;
-  }
-
-  database.splice(gameIndex, 1);
-  res.send(response);
+    let soal = database.find(soal => soal.index == idsoal);
+    if (soal) {
+        if (soal.jawaban == jawaban) {
+            skor[user] = (skor[user] || 0) + 3;
+        } else {
+            skor[user] = (skor[user] || 0) - 1;
+        }
+        database = database.filter(soal => soal.index != idsoal);
+    }
+    res.json({ skor: skor[user] });
 });
 
 app.get('/skor', (req, res) => {
-  const user = req.query.user;
-  const userGames = database.filter((game) => game.user === user);
-  let totalPoints = 0;
-
-  for (let i = 0; i < userGames.length; i++) {
-    const game = userGames[i].game;
-    totalPoints += game.jawaban === 'benar' ? 3 : -1;
-  }
-
-  res.send(`Skor ${user}: ${totalPoints}`);
+    let user = req.query.user;
+    res.json({ skor: skor[user] });
 });
 
 app.get('/topskor', (req, res) => {
-  const sortedDatabase = database.sort((a, b) => {
-    const pointsA = a.game.jawaban === 'benar' ? 3 : -1;
-    const pointsB = b.game.jawaban === 'benar' ? 3 : -1;
-    return pointsB - pointsA;
-  });
-
-  let response = 'Top Skor:\n\n';
-  for (let i = 0; i < sortedDatabase.length; i++) {
-    const game = sortedDatabase[i].game;
-    response += `${i + 1}. ${game.user}: ${game.jawaban === 'benar' ? 3 : -1} poin\n`;
-  }
-
-  res.send(response);
+    let topskor = Object.keys(skor).reduce((a, b) => skor[a] > skor[b] ? a : b);
+    res.json({ user: topskor, skor: skor[topskor] });
 });
 
-app.listen(port, () => {
-  console.log(`Server berjalan di http://localhost:${port}`);
-});
+app.listen(3000, () => console.log('Server berjalan di port 3000'));
