@@ -1,137 +1,78 @@
-// Buat aplikasi express
 const express = require('express');
-const app = express();
-
-// Buat modul request untuk mengambil data dari api
 const request = require('request');
 
-// Buat objek untuk menyimpan skor dan soal user
-let skor = {};
-let soal = {};
+const app = express();
+const port = 3000;
 
-// Buat fungsi untuk mengambil soal dari api
-function getSoal(api, callback) {
-  request(api, (error, response, body) => {
-    if (error) {
-      callback(error, null);
-    } else {
-      let data = JSON.parse(body);
-      callback(null, data.hasil);
-    }
-  });
-}
+let database = [];
 
-// Buat endpoint /game1 untuk game tebak kata
-app.get('/game1', (req, res) => {
-  // Ambil soal dari api
-  getSoal('https://rest-api.akuari.my.id/games/tebakkata', (error, data) => {
-    if (error) {
-      res.status(500).send('Terjadi kesalahan saat mengambil soal');
-    } else {
-      // Simpan soal dan jawaban ke objek soal
-      soal.game1 = data;
-      // Kirim soal ke user
-      res.send(`Soal: ${data.soal}`);
-    }
+app.get('/game1/:idsoal', (req, res) => {
+  const idSoal = req.params.idsoal;
+  request.get('https://rest-api.akuari.my.id/games/tebakkata', (error, response, body) => {
+    const gameData = JSON.parse(body);
+    const game = gameData.hasil;
+    database.push({ idSoal, game });
+    res.send(`Game 1 dimulai dengan soal: ${game.soal}`);
   });
 });
 
-// Buat endpoint /game2 untuk game susun kata
-app.get('/game2', (req, res) => {
-  // Ambil soal dari api
-  getSoal('https://rest-api.akuari.my.id/games/susunkata', (error, data) => {
-    if (error) {
-      res.status(500).send('Terjadi kesalahan saat mengambil soal');
-    } else {
-      // Simpan soal dan jawaban ke objek soal
-      soal.game2 = data;
-      // Kirim soal ke user
-      res.send(`Soal: ${data.soal}\nTipe: ${data.tipe}`);
-    }
+app.get('/game2/:idsoal', (req, res) => {
+  const idSoal = req.params.idsoal;
+  request.get('https://rest-api.akuari.my.id/games/susunkata', (error, response, body) => {
+    const gameData = JSON.parse(body);
+    const game = gameData.hasil;
+    database.push({ idSoal, game });
+    res.send(`Game 2 dimulai dengan soal: ${game.soal}`);
   });
 });
 
-// Buat endpoint /jawab/:user?jawaban= untuk user menjawab soal
 app.get('/jawab/:user', (req, res) => {
-  // Ambil nama user dan jawaban dari parameter
-  let user = req.params.user;
-  let jawaban = req.query.jawaban;
+  const user = req.params.user;
+  const jawaban = req.query.jawaban;
+  const idSoal = req.query.idsoal;
+  const gameIndex = database.findIndex((game) => game.idSoal === idSoal);
+  const game = database[gameIndex].game;
+  let response = '';
 
-  // Cek apakah user sudah ada di objek skor
-  if (!skor[user]) {
-    // Jika belum, buat properti baru dengan nilai 0
-    skor[user] = 0;
-  }
-
-  // Cek apakah user sudah mendapatkan soal
-  if (soal.game1 || soal.game2) {
-    // Jika ya, cek apakah jawaban user benar
-    if (jawaban === soal.game1.jawaban || jawaban === soal.game2.jawaban) {
-      // Jika benar, tambahkan skor user 3 poin
-      skor[user] += 3;
-      // Hapus soal yang sudah dijawab
-      soal.game1 = null;
-      soal.game2 = null;
-      // Kirim pesan ke user
-      res.send(`Selamat, jawaban Anda benar!\nSkor Anda: ${skor[user]}`);
-    } else {
-      // Jika salah, kurangi skor user 1 poin
-      skor[user] -= 1;
-      // Kirim pesan ke user
-      res.send(`Maaf, jawaban Anda salah.\nSkor Anda: ${skor[user]}`);
-    }
+  if (game.jawaban === jawaban) {
+    response = `Jawaban ${user} benar! Anda mendapatkan 3 poin.`;
   } else {
-    // Jika tidak, kirim pesan ke user
-    res.send('Anda belum mendapatkan soal.');
+    response = `Jawaban ${user} salah! Anda kehilangan 1 poin.`;
   }
+
+  database.splice(gameIndex, 1);
+  res.send(response);
 });
 
-// Buat endpoint /skor?user= untuk user melihat skor mereka
 app.get('/skor', (req, res) => {
-  // Ambil nama user dari query
-  let user = req.query.user;
+  const user = req.query.user;
+  const userGames = database.filter((game) => game.user === user);
+  let totalPoints = 0;
 
-  // Cek apakah user sudah ada di objek skor
-  if (skor[user]) {
-    // Jika ya, kirim skor user
-    res.send(`Skor Anda: ${skor[user]}`);
-  } else {
-    // Jika tidak, kirim pesan ke user
-    res.send('Anda belum bermain.');
+  for (let i = 0; i < userGames.length; i++) {
+    const game = userGames[i].game;
+    totalPoints += game.jawaban === 'benar' ? 3 : -1;
   }
+
+  res.send(`Skor ${user}: ${totalPoints}`);
 });
 
-// Buat endpoint /topskor untuk user melihat 10 skor tertinggi
 app.get('/topskor', (req, res) => {
-  // Buat array untuk menyimpan nama dan skor user
-  let topskor = [];
+  const sortedDatabase = database.sort((a, b) => {
+    const pointsA = a.game.jawaban === 'benar' ? 3 : -1;
+    const pointsB = b.game.jawaban === 'benar' ? 3 : -1;
+    return pointsB - pointsA;
+  });
 
-  // Looping objek skor
-  for (let user in skor) {
-    // Masukkan nama dan skor user ke array
-    topskor.push({ user: user, skor: skor[user] });
+  let response = 'Top Skor:\n\n';
+  for (let i = 0; i < sortedDatabase.length; i++) {
+    const game = sortedDatabase[i].game;
+    response += `${i + 1}. ${game.user}: ${game.jawaban === 'benar' ? 3 : -1} poin\n`;
   }
 
-  // Urutkan array berdasarkan skor tertinggi
-  topskor.sort((a, b) => b.skor - a.skor);
-
-  // Ambil 10 elemen pertama dari array
-  topskor = topskor.slice(0, 10);
-
-  // Buat string untuk menampilkan topskor
-  let output = 'Top 10 Skor:\n';
-
-  // Looping array topskor
-  for (let i = 0; i < topskor.length; i++) {
-    // Tambahkan nama dan skor user ke string output
-    output += `${i + 1}. ${topskor[i].user}: ${topskor[i].skor}\n`;
-  }
-
-  // Kirim string output ke user
-  res.send(output);
+  res.send(response);
 });
 
-// Jalankan aplikasi di port 3000
-app.listen(3000, () => {
-  console.log('Aplikasi berjalan di http://localhost:3000');
+app.listen(port, () => {
+  console.log(`Server berjalan di http://localhost:${port}`);
 });
