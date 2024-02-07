@@ -2,108 +2,106 @@ const express = require('express');
 const request = require('request');
 
 const app = express();
-const port = 3000;
+const PORT = 3000;
 
-const games = {
-  game1: {
-    url: 'https://rest-api.akuari.my.id/games/tebakkata',
-    currentQuestion: {},
-    answeredQuestions: {},
-  },
-  game2: {
-    url: 'https://rest-api.akuari.my.id/games/susunkata',
-    currentQuestion: {},
-    answeredQuestions: {},
-  },
-};
+let tebakkataSoal = null;
+let susunkataSoal = null;
+let jawabanCount = {};
 
-const users = {};
-
-app.get('/game1/:iduser', (req, res) => {
-  const iduser = req.params.iduser;
-
-  if (!users[iduser]) {
-    users[iduser] = { score: 0, attempts: 3 };
-    getNewQuestion('game1', iduser, res);
-  } else {
-    res.send('Kamu sudah punya soal belum selesai! 😅');
-  }
-});
-
-app.get('/game2/:iduser', (req, res) => {
-  const iduser = req.params.iduser;
-
-  if (!users[iduser]) {
-    users[iduser] = { score: 0, attempts: 3 };
-    getNewQuestion('game2', iduser, res);
-  } else {
-    res.send('Kamu sudah punya soal belum selesai! 😅');
-  }
-});
-
+// Endpoint untuk menampilkan aturan game
 app.get('/aturan', (req, res) => {
-  res.send('Aturan game:\n- Setiap game memiliki 3 kesempatan menjawab.\n- Jika berhasil, kamu mendapatkan 3 poin.\n- Jangan mengambil soal baru jika soalmu belum selesai. 😊');
+  res.send("🎮 Selamat datang di Game API!\n\nKamu bisa main dua game:\n1. Tebak Kata\n2. Susun Kata\n\nSetiap jawaban benar akan mendapatkan 3 poin!\nKamu punya 3 kesempatan untuk menjawab setiap soal.\n\nSemangat! 😊");
 });
 
+// Endpoint untuk mendapatkan soal tebak kata
+app.get('/tebakkata/:idsoal', (req, res) => {
+  const idsoal = req.params.idsoal;
+  if (tebakkataSoal && tebakkataSoal.index === idsoal) {
+    res.send("Kamu sudah punya soal tebak kata yang sedang berjalan! Coba jawab dulu itu. 😉");
+  } else {
+    request('https://rest-api.akuari.my.id/games/tebakkata', (error, response, body) => {
+      if (!error && response.statusCode === 200) {
+        tebakkataSoal = JSON.parse(body).hasil;
+        tebakkataSoal.index = idsoal;
+        res.send(`Ini soalmu: ${tebakkataSoal.soal}`);
+      } else {
+        res.send("Maaf, ada masalah saat mengambil soal. Coba lagi nanti ya! 😅");
+      }
+    });
+  }
+});
+
+// Endpoint untuk mendapatkan soal susun kata
+app.get('/susunkata/:idsoal', (req, res) => {
+  const idsoal = req.params.idsoal;
+  if (susunkataSoal && susunkataSoal.index === idsoal) {
+    res.send("Kamu sudah punya soal susun kata yang sedang berjalan! Coba jawab dulu itu. 😉");
+  } else {
+    request('https://rest-api.akuari.my.id/games/susunkata', (error, response, body) => {
+      if (!error && response.statusCode === 200) {
+        susunkataSoal = JSON.parse(body).hasil;
+        susunkataSoal.index = idsoal;
+        res.send(`Coba susun kata ini: ${susunkataSoal.soal}`);
+      } else {
+        res.send("Maaf, ada masalah saat mengambil soal. Coba lagi nanti ya! 😅");
+      }
+    });
+  }
+});
+
+// Endpoint untuk menerima jawaban dari user
 app.get('/jawab/:user', (req, res) => {
-  const { jawaban, iduser } = req.query;
-  const game = users[iduser].currentGame;
+  const user = req.params.user;
+  const jawaban = req.query.jawaban;
+  const idsoal = req.query.idsoal;
 
-  if (!jawaban || !iduser || !game) {
-    res.send('Parameter tidak lengkap! 😕');
-    return;
+  if (!jawabanCount[user]) {
+    jawabanCount[user] = 1;
+  } else {
+    jawabanCount[user]++;
   }
 
-  if (users[iduser].attempts > 0) {
-    if (jawaban.toLowerCase() === users[iduser].currentQuestion.hasil.jawaban.toLowerCase()) {
-      users[iduser].score += 3;
-      users[iduser].attempts = 0;
-      deleteQuestion(game, iduser);
-      res.send('Selamat! Jawaban benar! 🎉');
-    } else {
-      users[iduser].attempts--;
-      res.send(`Jawaban salah! Sisa kesempatan: ${users[iduser].attempts} 😕`);
-    }
+  if (jawabanCount[user] > 3) {
+    res.send("Game sudah selesai, kamu sudah melebihi kesempatan menjawab! 😅");
   } else {
-    res.send('Maaf, kesempatanmu sudah habis! 😅');
+    if (tebakkataSoal && tebakkataSoal.index === idsoal) {
+      if (jawaban.toLowerCase() === tebakkataSoal.jawaban.toLowerCase()) {
+        tebakkataSoal = null;
+        res.send("Jawaban benar! Kamu mendapatkan 3 poin. 🎉");
+      } else {
+        res.send("Jawaban salah! Coba lagi ya. 😕");
+      }
+    } else if (susunkataSoal && susunkataSoal.index === idsoal) {
+      if (jawaban.toLowerCase() === susunkataSoal.jawaban.toLowerCase()) {
+        susunkataSoal = null;
+        res.send("Jawaban benar! Kamu mendapatkan 3 poin. 🎉");
+      } else {
+        res.send("Jawaban salah! Coba lagi ya. 😕");
+      }
+    } else {
+      res.send("Maaf, tidak ada soal dengan ID tersebut atau soal sudah dijawab sebelumnya. 😅");
+    }
   }
 });
 
+// Endpoint untuk melihat skor user
 app.get('/skor', (req, res) => {
-  const iduser = req.query.user;
-  if (users[iduser]) {
-    res.send(`Skormu saat ini: ${users[iduser].score} poin. 😊`);
-  } else {
-    res.send('ID pengguna tidak valid! 😕');
-  }
+  const user = req.query.user;
+  const skor = jawabanCount[user] ? jawabanCount[user] * 3 : 0;
+  res.send(`Skor ${user}: ${skor} poin.`);
 });
 
+// Endpoint untuk melihat top skor
 app.get('/topskor', (req, res) => {
-  const topUsers = Object.entries(users).sort((a, b) => b[1].score - a[1].score).slice(0, 5);
-  const topScores = topUsers.map(user => `${user[0]}: ${user[1].score} poin`);
-  res.send(`Top 5 skor:\n${topScores.join('\n')}`);
-});
-
-function getNewQuestion(game, iduser, res) {
-  request(games[game].url, (error, response, body) => {
-    if (!error && response.statusCode === 200) {
-      const question = JSON.parse(body);
-      games[game].currentQuestion[iduser] = question;
-      users[iduser].currentGame = game;
-      res.send(`Berikut soalmu: ${question.hasil.soal} 😊`);
-    } else {
-      res.send('Gagal mengambil soal. Coba lagi nanti! 😕');
-    }
+  const topSkor = Object.entries(jawabanCount).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  let topSkorMsg = "Top Skor:\n";
+  topSkor.forEach((entry, index) => {
+    topSkorMsg += `${index + 1}. ${entry[0]} - ${entry[1] * 3} poin\n`;
   });
-}
-
-function deleteQuestion(game, iduser) {
-  const question = games[game].currentQuestion[iduser];
-  games[game].answeredQuestions[iduser] = question;
-  delete games[game].currentQuestion[iduser];
-}
-
-app.listen(port, () => {
-  console.log(`Server berjalan di http://localhost:${port}`);
+  res.send(topSkorMsg);
 });
-    
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+      
