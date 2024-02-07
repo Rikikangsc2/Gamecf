@@ -10,7 +10,7 @@ let jawabanCount = {};
 let db = [];
 
 app.get("/db", async ( req, res ) => {
-  if (!req.query.item) return res.send("masukan item")
+  if (!req.query.item) return res.json(db)
 if (db.includes(req.query.item)) return res.json(db)
  await db.push(req.query.item);
   res.json(db)
