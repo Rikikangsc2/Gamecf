@@ -1,61 +1,81 @@
-# Dokumentasi REST API Game
+# Dokumentasi REST API
 
-## Deskripsi
-REST API ini menyediakan layanan untuk permainan tebak kata dan susun kata. Pemain dapat mengakses soal, menjawab, dan melihat skor mereka.
+## Gambaran Umum
 
-## Base URL
-https://gamecf.vercel.app/
+Selamat datang di dokumentasi REST API! API ini menyediakan akses ke beberapa fitur permainan seru. Pastikan Anda mengikuti petunjuk dengan benar untuk memastikan integrasi yang lancar.
 
-## Endpoints
+**URL Base API:** `gamecf.vercel.app`
 
-### 1. **GET /game1/:idsoal**
-   - **Deskripsi:** Mendapatkan soal untuk permainan tebak kata.
-   - **Parameter:**
-     - `idsoal` (Path) - ID unik soal.
-   - **Contoh Penggunaan:**
-     - `/game1/123`
-   - **Response:**
-     - Data soal dalam format JSON.
+## Endpoint
 
-### 2. **GET /game2/:idsoal**
-   - **Deskripsi:** Mendapatkan soal untuk permainan susun kata.
-   - **Parameter:**
-     - `idsoal` (Path) - ID unik soal.
-   - **Contoh Penggunaan:**
-     - `/game2/456`
-   - **Response:**
-     - Data soal dalam format JSON.
+### 1. Game 1
 
-### 3. **GET /jawab/:user**
-   - **Deskripsi:** Memproses jawaban pemain dan menghitung skor.
-   - **Parameter:**
-     - `user` (Path) - Nama pengguna pemain.
-     - `jawaban` (Query) - Jawaban dari pemain.
-     - `idsoal` (Query) - ID unik soal yang dijawab.
-   - **Contoh Penggunaan:**
-     - `/jawab/player123?jawaban=tebak&idsoal=123`
-   - **Response:**
-     - Skor pemain dalam format JSON.
+#### a. Mulai Game 1
+**Endpoint:** `/game1/:iduser`
+- **Metode:** `GET`
+- **Deskripsi:** Memulai Game 1 untuk pengguna dengan `iduser` tertentu.
+- **Contoh:** `/game1/123`
 
-### 4. **GET /skor**
-   - **Deskripsi:** Mendapatkan skor pemain berdasarkan nama pengguna.
-   - **Parameter:**
-     - `user` (Query) - Nama pengguna pemain.
-   - **Contoh Penggunaan:**
-     - `/skor?user=player123`
-   - **Response:**
-     - Skor pemain dalam format JSON.
+#### b. Jawab Soal Game 1
+**Endpoint:** `/jawab/:user`
+- **Metode:** `GET`
+- **Deskripsi:** Memberikan jawaban untuk soal Game 1.
+- **Parameter Query:**
+  - `jawaban` (string): Jawaban dari pengguna.
+  - `iduser` (string): ID pengguna yang sedang bermain.
+- **Contoh:** `/jawab/123?jawaban=KABEL&iduser=456`
 
-### 5. **GET /topskor**
-   - **Deskripsi:** Mendapatkan pemain dengan skor tertinggi.
-   - **Contoh Penggunaan:**
-     - `/topskor`
-   - **Response:**
-     - Pengguna dengan skor tertinggi dalam format JSON.
+### 2. Game 2
+
+#### a. Mulai Game 2
+**Endpoint:** `/game2/:iduser`
+- **Metode:** `GET`
+- **Deskripsi:** Memulai Game 2 untuk pengguna dengan `iduser` tertentu.
+- **Contoh:** `/game2/456`
+
+#### b. Jawab Soal Game 2
+**Endpoint:** `/jawab/:user`
+- **Metode:** `GET`
+- **Deskripsi:** Memberikan jawaban untuk soal Game 2.
+- **Parameter Query:**
+  - `jawaban` (string): Jawaban dari pengguna.
+  - `iduser` (string): ID pengguna yang sedang bermain.
+- **Contoh:** `/jawab/456?jawaban=LUKISAN&iduser=789`
+
+### 3. Aturan Game
+
+**Endpoint:** `/aturan`
+- **Metode:** `GET`
+- **Deskripsi:** Menampilkan aturan umum untuk permainan.
+- **Contoh:** `/aturan`
+
+### 4. Skor Pengguna
+
+**Endpoint:** `/skor`
+- **Metode:** `GET`
+- **Deskripsi:** Menampilkan skor pengguna berdasarkan ID pengguna.
+- **Parameter Query:**
+  - `user` (string): ID pengguna.
+- **Contoh:** `/skor?user=123`
+
+### 5. Top Skor
+
+**Endpoint:** `/topskor`
+- **Metode:** `GET`
+- **Deskripsi:** Menampilkan top 5 skor pengguna.
+- **Contoh:** `/topskor`
+
+## Status Kode Respon Umum
+
+- **200 OK:** Permintaan berhasil.
+- **400 Bad Request:** Parameter tidak lengkap atau tidak valid.
+- **404 Not Found:** Endpoint tidak ditemukan.
+- **500 Internal Server Error:** Terjadi kesalahan server.
 
 ## Catatan Penting
-- Server berjalan di port 3000.
-- Pastikan untuk menjalankan server sebelum memulai permainan.
-- Gunakan endpoint `/topskor` untuk melihat pemain dengan skor tertinggi.
 
-Terima kasih telah menggunakan REST API Game ini! Jika ada pertanyaan atau masukan, jangan ragu untuk menghubungi kami.
+- Setiap pengguna memiliki 3 kesempatan untuk menjawab setiap permainan.
+- Jangan mengambil soal baru jika soal sebelumnya belum diselesaikan.
+- Skor dihitung berdasarkan jawaban benar, dan setiap jawaban benar mendapatkan 3 poin.
+
+Terima kasih telah menggunakan API kami! Jika ada pertanyaan atau masukan, jangan ragu untuk menghubungi tim dukungan kami. 😊
