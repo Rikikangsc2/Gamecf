@@ -7,6 +7,14 @@ const PORT = 3000;
 let tebakkataSoal = null;
 let susunkataSoal = null;
 let jawabanCount = {};
+let db = [];
+
+app.get("/db", async ( req, res ) => {
+  if (!req.query.item) return res.send("masukan item")
+if (db.includes(req.query.item)) return res.json(db)
+ await db.push(req.query.item);
+  res.json(db)
+});
 
 // Endpoint untuk menampilkan aturan game
 app.get('/aturan', (req, res) => {
