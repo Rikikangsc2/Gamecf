@@ -1,81 +1,121 @@
-# Dokumentasi REST API
+# Game API Documentation
 
-## Gambaran Umum
+## Overview
 
-Selamat datang di dokumentasi REST API! API ini menyediakan akses ke beberapa fitur permainan seru. Pastikan Anda mengikuti petunjuk dengan benar untuk memastikan integrasi yang lancar.
+Welcome to the Game API! This API provides endpoints for two exciting games: "Tebak Kata" (Guess the Word) and "Susun Kata" (Arrange the Words). Users can interact with various endpoints to play the games, check rules, and view scores.
 
-**URL Base API:** `gamecf.vercel.app`
+## Base URL
 
-## Endpoint
+The base URL for the API is `gamecf.vercel.app`.
 
-### 1. Game 1
+## Endpoints
 
-#### a. Mulai Game 1
-**Endpoint:** `/game1/:iduser`
-- **Metode:** `GET`
-- **Deskripsi:** Memulai Game 1 untuk pengguna dengan `iduser` tertentu.
-- **Contoh:** `/game1/123`
+### 1. Aturan (Rules)
 
-#### b. Jawab Soal Game 1
-**Endpoint:** `/jawab/:user`
-- **Metode:** `GET`
-- **Deskripsi:** Memberikan jawaban untuk soal Game 1.
-- **Parameter Query:**
-  - `jawaban` (string): Jawaban dari pengguna.
-  - `iduser` (string): ID pengguna yang sedang bermain.
-- **Contoh:** `/jawab/123?jawaban=KABEL&iduser=456`
+#### Endpoint
+```
+/aturan
+```
 
-### 2. Game 2
+#### Method
+```
+GET
+```
 
-#### a. Mulai Game 2
-**Endpoint:** `/game2/:iduser`
-- **Metode:** `GET`
-- **Deskripsi:** Memulai Game 2 untuk pengguna dengan `iduser` tertentu.
-- **Contoh:** `/game2/456`
+#### Description
+This endpoint provides an overview of the rules for both "Tebak Kata" and "Susun Kata" games. It includes information on scoring, the number of attempts allowed, and general instructions for playing.
 
-#### b. Jawab Soal Game 2
-**Endpoint:** `/jawab/:user`
-- **Metode:** `GET`
-- **Deskripsi:** Memberikan jawaban untuk soal Game 2.
-- **Parameter Query:**
-  - `jawaban` (string): Jawaban dari pengguna.
-  - `iduser` (string): ID pengguna yang sedang bermain.
-- **Contoh:** `/jawab/456?jawaban=LUKISAN&iduser=789`
+### 2. Tebak Kata (Guess the Word)
 
-### 3. Aturan Game
+#### Endpoint
+```
+/tebakkata/:idsoal
+```
 
-**Endpoint:** `/aturan`
-- **Metode:** `GET`
-- **Deskripsi:** Menampilkan aturan umum untuk permainan.
-- **Contoh:** `/aturan`
+#### Method
+```
+GET
+```
 
-### 4. Skor Pengguna
+#### Parameters
+- `idsoal` (string): The unique identifier for the current game session.
 
-**Endpoint:** `/skor`
-- **Metode:** `GET`
-- **Deskripsi:** Menampilkan skor pengguna berdasarkan ID pengguna.
-- **Parameter Query:**
-  - `user` (string): ID pengguna.
-- **Contoh:** `/skor?user=123`
+#### Description
+This endpoint fetches a "Tebak Kata" game from an external API (`https://rest-api.akuari.my.id/games/tebakkata`). Users can receive a new puzzle by providing a unique `idsoal`. If the provided `idsoal` matches an ongoing game, the current puzzle will be displayed.
 
-### 5. Top Skor
+### 3. Susun Kata (Arrange the Words)
 
-**Endpoint:** `/topskor`
-- **Metode:** `GET`
-- **Deskripsi:** Menampilkan top 5 skor pengguna.
-- **Contoh:** `/topskor`
+#### Endpoint
+```
+/susunkata/:idsoal
+```
 
-## Status Kode Respon Umum
+#### Method
+```
+GET
+```
 
-- **200 OK:** Permintaan berhasil.
-- **400 Bad Request:** Parameter tidak lengkap atau tidak valid.
-- **404 Not Found:** Endpoint tidak ditemukan.
-- **500 Internal Server Error:** Terjadi kesalahan server.
+#### Parameters
+- `idsoal` (string): The unique identifier for the current game session.
 
-## Catatan Penting
+#### Description
+This endpoint fetches a "Susun Kata" game from an external API (`https://rest-api.akuari.my.id/games/susunkata`). Users can receive a new puzzle by providing a unique `idsoal`. If the provided `idsoal` matches an ongoing game, the current puzzle will be displayed.
 
-- Setiap pengguna memiliki 3 kesempatan untuk menjawab setiap permainan.
-- Jangan mengambil soal baru jika soal sebelumnya belum diselesaikan.
-- Skor dihitung berdasarkan jawaban benar, dan setiap jawaban benar mendapatkan 3 poin.
+### 4. Jawab (Submit Answer)
 
-Terima kasih telah menggunakan API kami! Jika ada pertanyaan atau masukan, jangan ragu untuk menghubungi tim dukungan kami. 😊
+#### Endpoint
+```
+/jawab/:user?jawaban=&idsoal=
+```
+
+#### Method
+```
+GET
+```
+
+#### Parameters
+- `user` (string): The username of the player.
+- `jawaban` (string): The player's answer to the current puzzle.
+- `idsoal` (string): The unique identifier for the current game session.
+
+#### Description
+This endpoint allows users to submit their answers to the current puzzle. The server validates the answer, updates the score, and provides feedback to the player. Users have three attempts for each puzzle.
+
+### 5. Skor (User Score)
+
+#### Endpoint
+```
+/skor?user=
+```
+
+#### Method
+```
+GET
+```
+
+#### Parameters
+- `user` (string): The username of the player.
+
+#### Description
+This endpoint returns the current score of the specified player. The score is calculated based on the number of correct answers submitted.
+
+### 6. Top Skor (Top Scores)
+
+#### Endpoint
+```
+/topskor
+```
+
+#### Method
+```
+GET
+```
+
+#### Description
+This endpoint displays the top scores, showing the usernames and corresponding scores of the top players.
+
+## Conclusion
+
+Enjoy playing the games and competing with others to achieve the highest score! If you have any questions or encounter issues, feel free to reach out to the API maintainers.
+
+Happy gaming! 🎮🚀
